@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="co.kr.hyein.service.impl.boardMapper">
+	<select id="getList" resultType="hyeinVO">
+		select
+			board_no,
+			title,
+			regdate::VARCHAR,
+			hitnum,
+			writer
+		from
+			board
+		where 1=1
+	      <if test='searchOption != "" and searchOption != null and keyword != "" and keyword != null'>
+	             and ${searchOption} LIKE CONCAT('%',#{keyword},'%')
+	       </if>
+		order by board_no DESC
+		limit #{limit} offset #{offset}
+		
+	</select>
+	
+	<!-- detail -->
+	<select id="boardDetail" resultType="hyeinVO">
+		select	
+			board_no,
+			title,
+			writer,
+			regdate::VARCHAR,
+			content,
+			hitnum,
+			b.fileName 
+		from
+			board  a
+		left join file_jhi b
+		on 
+			a.fileId = b.fileId
+     	where
+     		a.board_no = #{boardNo}
+	</select>
+	
+	<!-- delete -->
+	<delete id="boardDelete" parameterType="hyeinVO">
+		delete 
+		from 
+			board
+		where
+			board_no = #{boardNo}
+	</delete>
+	
+	<!-- insert -->
+	<insert id="boardInsert" parameterType="hyeinVO">
+		<selectKey keyProperty="board_no" resultType="int" order="BEFORE">
+		 select
+		 	max(board_no)+1
+		 from 
+		 	board
+		</selectKey>
+		insert into board
+			(board_no , title, regdate, writer, content, fileId)
+		values
+			(#{boardNo} , #{title} , now(), #{writer}, #{content}, #{fileId})
+	</insert>
+	
+	<!-- update -->
+	 <update id="boardUpdate" parameterType="hyeinVO">
+      update
+         board
+      set
+         title=#{title},
+         writer=#{writer},
+         content=#{content},
+         regdate=now()
+      where
+         board_no = #{boardNo}
+      </update>
+	
+	<!-- hitnum -->
+	<update id="hitnum">
+	update board
+	set
+		hitnum = hitnum+1
+	where
+		board_no = #{boardNo}
+	</update>
+	
+	<!-- boardCnt -->
+	<select id="totalCnt" resultType="int">
+	select 
+		count(*)
+	from
+		 board
+	</select>
+	
+	<!-- fileUpload -->
+	<insert id="fileUpload" parameterType="hyeinVO">
+	insert into file_jhi
+		(
+			fileName,
+			filePath,
+			fileId,
+			fileRegdate
+		)
+	values
+		(
+			#{fileName},
+			#{filePath},
+			#{fileId},
+			now()
+		)
+	</insert>
+	
+	<!-- lineGraph -->
+	<select id="graphCnt" resultType="hashMap">
+		select 
+			regdate::VARCHAR,
+			SUM(hitnum) as hitnum
+		from
+			board
+		group by regdate
+		order by regdate DESC
+	</select>
+	
+</mapper>
